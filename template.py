@@ -9,7 +9,7 @@ import json
 
 ########################################################################
 
-
+# Node class to represent the nodes in the graph
 class Node:
     neighbours = []
     def __init__(self, index):
@@ -38,18 +38,22 @@ class Inference:
         self.input = data
         self.VariablesCount = self.input["VariablesCount"]
 
-        self.graph = [[] for i in range(VariablesCount)]
-        self.nodes = [Node(i) for i in range(VariablesCount)]
+        self.graph = [[] for i in range(self.VariablesCount)]
+        self.nodes = [Node(i) for i in range(self.VariablesCount)]
         self.potentials = []
         self.k_value = self.input["k value (in top k)"]
 
+        # Iterate thorugh the cliques and potentials and create the graph
         for candp in self.input["Cliques and Potentials"]:
             for i in range(candp["clique_size"]):
                 for j in range(i+1, candp["clique_size"]):
+                    # Add unique edges to the graph
                     self.graph[candp["cliques"][i]].append(candp["cliques"][j])
                     self.graph[candp["cliques"][j]].append(candp["cliques"][i])
-                    nodes[candp["cliques"][i]].neighbours.append(candp["cliques"][j])
-                    nodes[candp["cliques"][j]].neighbours.append(candp["cliques"][i])
+
+                    # Add neighbours to the nodes
+                    self.nodes[candp["cliques"][i]].neighbours.append(candp["cliques"][j])
+                    self.nodes[candp["cliques"][j]].neighbours.append(candp["cliques"][i])
 
 
             self.potentials.append(candp["potentials"])
@@ -64,14 +68,27 @@ class Inference:
 
         pass
 
-    def isSimplicial(node, graph):
-        for i in range(len(self.nodes[node].neighbours)):
-            for j in range(i+1, len(self.nodes[node].neighbours)):
-                if j not in graph[i]:
-                    return False 
+    def isSimplicial(self, node, graph):
+        # Check if the node is simplicial or not
+        for i in range(len(graph[node])):
+            for j in range(i+1, len(graph[node])):
+                if graph[node][j] not in graph[graph[node][i]] and graph[node][i] not in graph[graph[node][j]]:
+                    return False
         return True
 
-    def triangulate_and_get_cliques(self):
+    def make_node_simplicial(self, graph, node):
+        # Creat a clique between all the neighbours of the node
+        for i in range(len(graph[node])):
+            for j in range(i+1, len(graph[node])):
+                if graph[node][j] not in graph[graph[node][i]]:
+                    graph[graph[node][i]].append(graph[node][j])
+                    graph[graph[node][j]].append(graph[node][i])
+ 
+                    self.graph[graph[node][i]].append(self.graph[node][j])
+                    self.graph[graph[node][j]].append(self.graph[node][i])
+        pass
+
+    def triangulate_and_get_cliques(self):  
         """
         Triangulate the undirected graph and extract the maximal cliques.
         
@@ -83,28 +100,59 @@ class Inference:
 
         Refer to the problem statement for details on triangulation and clique extraction.
         """
+
         simplicial_vertices = []
+        # First find the initial simplicial vertices
         for i in range(self.VariablesCount):
-            if isSimplicial(i, self.graph):
+            if self.isSimplicial(i, self.graph):
                 simplicial_vertices.append(i)
-        
-        copy_graph = self.graph
-        copy_simplicial_vertices = simplicial_vertices
-        ordering = []
-        while(simplicial_vertices != 0):
+
+        # Copy the graph and simplicial vertices 
+        copy_graph = [self.graph[i].copy() for i in range(self.VariablesCount)]
+        simplicial_vertices_set = set(simplicial_vertices)
+        ordering = [] # Variable elimination ordering
+        count = 0
+        while(len(simplicial_vertices) != 0):
+            if(count == 10):
+                break
+            count += 1 
             top = simplicial_vertices.pop(0)
-            ordering.append(top)
+            ordering.append(top) 
+            # Remove the top from the graph and all the edges associated with it
             for i in range(self.VariablesCount):
                 if top in copy_graph[i]:
                     copy_graph[i].remove(top)
 
             copy_graph[top].clear
-        
+
+            new_simplicial_vertices = []
             for i in range(self.VariablesCount):
-                if i not in copy_simplicial_vertices and isSimplicial(i, copy_graph):
-                    simplicial_vertices.append(i)
-                    copy_simplicial_vertices.append(i)
-        
+                if i not in simplicial_vertices_set and self.isSimplicial(i, copy_graph):
+                    new_simplicial_vertices.append(i)
+                    simplicial_vertices_set.add(i) 
+
+            # If no new simplicial vertices are found, then we need to add a new simplicial vertex
+            if(len(new_simplicial_vertices) == 0) and (len(simplicial_vertices_set) != self.VariablesCount):
+                # Goind with first heuristic: Choose vertex with smallest degree and connect all its neighbours
+                min_degree = 100000000
+                min_degree_vertex = -1
+                for i in range(self.VariablesCount):
+                    if len(copy_graph[i]) < min_degree:
+                        min_degree = len(copy_graph[i])
+                        min_degree_vertex = i 
+                # Connect all the neighbours of the min_degree_vertex
+                self.make_node_simplicial(copy_graph, min_degree_vertex)
+
+                # Add the min_degree_vertex to the simplicial vertices
+                new_simplicial_vertices.append(min_degree_vertex)
+                simplicial_vertices_set.add(min_degree_vertex)
+            simplicial_vertices.extend(new_simplicial_vertices)
+        print("#"*100)
+        print(f'ordering{ordering}')
+        print("#"*100)
+        print(f'graph {self.graph}')
+
+
         pass
 
     def get_junction_tree(self):
