@@ -48,8 +48,11 @@ class Inference:
             for i in range(candp["clique_size"]):
                 for j in range(i+1, candp["clique_size"]):
                     # Add unique edges to the graph
-                    self.graph[candp["cliques"][i]].append(candp["cliques"][j])
-                    self.graph[candp["cliques"][j]].append(candp["cliques"][i])
+                    if candp["cliques"][j] not in self.graph[candp["cliques"][i]]:
+                        self.graph[candp["cliques"][i]].append(candp["cliques"][j])
+                    
+                    if candp["cliques"][i] not in self.graph[candp["cliques"][j]]:
+                        self.graph[candp["cliques"][j]].append(candp["cliques"][i])
 
                     # Add neighbours to the nodes
                     self.nodes[candp["cliques"][i]].neighbours.append(candp["cliques"][j])
@@ -62,12 +65,18 @@ class Inference:
                  index_list = ['#']*self.VariablesCount 
                  index_list[candp["cliques"][0]] = '1'
                  index = ''.join(index_list)
-                 self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][1]
+                 if self.potentials.get(tuple(candp["cliques"])) is not None:
+                    self.potentials[tuple(candp["cliques"])][index] *= candp["potentials"][1]
+                 else :
+                    self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][1]
 
                  index_list = ['#']*self.VariablesCount 
                  index_list[candp["cliques"][0]]= '0'
                  index = ''.join(index_list)
-                 self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][0]
+                 if self.potentials.get(tuple(candp["cliques"])) is not None:
+                    self.potentials[tuple(candp["cliques"])][index] *= candp["potentials"][0]
+                 else :
+                    self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][0]
             else:
                 count = 0
                 for i in range(2):
@@ -76,8 +85,10 @@ class Inference:
                         index_list[candp["cliques"][0]] = str(i)
                         index_list[candp["cliques"][1]] = str(j)
                         index = ''.join(index_list)
-                        self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][count]
+                        if self.potentials.get(tuple(candp["cliques"])) is not None:
+                            self.potentials[tuple(candp["cliques"])][index] *= candp["potentials"][count]
                         count += 1
+            print(f'graph {self.graph} {candp["cliques"]}')
         print("_"*100)
         print(self.potentials)
         pass
