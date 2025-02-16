@@ -40,7 +40,7 @@ class Inference:
 
         self.graph = [[] for i in range(self.VariablesCount)]
         self.nodes = [Node(i) for i in range(self.VariablesCount)]
-        self.potentials = []
+        self.potentials = {}
         self.k_value = self.input["k value (in top k)"]
 
         # Iterate thorugh the cliques and potentials and create the graph
@@ -55,9 +55,31 @@ class Inference:
                     self.nodes[candp["cliques"][i]].neighbours.append(candp["cliques"][j])
                     self.nodes[candp["cliques"][j]].neighbours.append(candp["cliques"][i])
 
+            # Add the potentials to the potentials dictionary  
+            self.potentials[tuple(candp["cliques"])] = {}
+            if(len(candp["cliques"]) == 1):
+                 
+                 index_list = ['#']*self.VariablesCount 
+                 index_list[candp["cliques"][0]] = '1'
+                 index = ''.join(index_list)
+                 self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][1]
 
-            self.potentials.append(candp["potentials"])
-                
+                 index_list = ['#']*self.VariablesCount 
+                 index_list[candp["cliques"][0]]= '0'
+                 index = ''.join(index_list)
+                 self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][0]
+            else:
+                count = 0
+                for i in range(2):
+                    for j in range(2):
+                        index_list = ['#']*self.VariablesCount 
+                        index_list[candp["cliques"][0]] = str(i)
+                        index_list[candp["cliques"][1]] = str(j)
+                        index = ''.join(index_list)
+                        self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][count]
+                        count += 1
+        print("_"*100)
+        print(self.potentials)
         pass
 
     def isSimplicial(self, node, graph):
@@ -99,13 +121,14 @@ class Inference:
 
         Refer to the problem statement for details on triangulation and clique extraction.
         """
-
+        print("#"*100)
+        print(f'graph {self.graph}')
         simplicial_vertices = []
         # First find the initial simplicial vertices
         for i in range(self.VariablesCount):
             if self.isSimplicial(i, self.graph):
                 simplicial_vertices.append(i)
-
+        print(f'simplicial_vertices {simplicial_vertices}')
         # Copy the graph and simplicial vertices 
         copy_graph = [self.graph[i].copy() for i in range(self.VariablesCount)]
         simplicial_vertices_set = set(simplicial_vertices)
@@ -145,11 +168,13 @@ class Inference:
                 # Add the min_degree_vertex to the simplicial vertices
                 new_simplicial_vertices.append(min_degree_vertex)
                 simplicial_vertices_set.add(min_degree_vertex)
+            print(f'new_simplicial_vertices {new_simplicial_vertices} {simplicial_vertices_set} \n copy_graph {copy_graph}')
             simplicial_vertices.extend(new_simplicial_vertices)
 
         self.clique_list = []
         visited = set()
-        print(ordering)
+        print("#"*100)
+        print(f'ordering {ordering}')
         for i in range(len(ordering)):
             new_clique = []
             new_clique.append(ordering[i])
@@ -159,7 +184,9 @@ class Inference:
             
             if(self.forms_clique(ordering[i:])):
                 break
-
+        for i in range(len(self.clique_list)):
+            self.clique_list[i] = sorted(self.clique_list[i])
+        
         print(self.clique_list)
         # print("#"*100)
         # print(f'ordering{ordering}')
@@ -206,7 +233,45 @@ class Inference:
         # for i in range(0,len(self.junction_tree)):
         #     if(len)
         # pass
+        print("#"*100)
+        print(f'potentials {self.potentials}')
+        self.junction_tree_potentials = [[] for i in range(len(self.junction_tree))]
+        for cliq, index in zip(self.clique_list, range(len(self.clique_list))):
+            if len(cliq) == 1:
+                self.junction_tree_potentials[index] = self.potentials.get(tuple([cliq[0]]))
 
+            for i in range(len(cliq)):
+                for j in range(len(cliq)):
+                    if self.potentials.get(tuple([cliq[i], cliq[j]])) is not None:
+                        if self.junction_tree_potentials[index] == []:
+                            self.junction_tree_potentials[index] = self.potentials.get(tuple([cliq[i], cliq[j]]))
+                        else:
+                            new_potential = {}
+                            for x in self.junction_tree_potentials[i]:
+                                for y in self.potentials.get(tuple([cliq[i], cliq[j]])):
+                                    non_hash_indices = [k for k in range(self.VariablesCount) if x[k] != '#']
+                                    common_indices = [k for k in range(self.VariablesCount) if k in non_hash_indices and k in y]
+                                    non_hash_minus_common_indices = [k for k in range(self.VariablesCount) if k in non_hash_indices and k not in common_indices]
+                                    cliq_indices = [k for k in range(self.VariablesCount) if k in cliq and k not in common_indices]
+                                    indices = non_hash_indices+cliq_indices
+                                    for i in range(2**len(indices)):
+                                        index_list1 = ['#']*self.VariablesCount
+                                        index_list2 = ['#']*self.VariablesCount
+                                        for idx in range(len(non_hash_indices)):
+                                            index_list1[non_hash_indices[idx]] = '1' if (i & (1 << idx)) else '0'
+                                        for idx in range(len(non_hash_indices), len(indices)):
+                                            index_list2[indices[idx]] = '1' if (i & (1 << idx)) else '0'
+                                        index1 = ''.join(index_list1)
+                                        index2 = ''.join(index_list2)
+                                        index = ''.join(index_list1+index_list2)
+                                    new_potential[index] = self.junction_tree_potentials[index1]*self.potentials.get(tuple([cliq[i], cliq[j]]))[index2]
+                            self.junction_tree_potentials[index] = new_potential
+        
+        
+        print("#"*100)
+        print(f'junction_tree_potentials {self.junction_tree_potentials}')
+        pass
+    
     def get_z_value(self):
         """
         Compute the partition function (Z value) of the graphical model.
@@ -283,6 +348,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
+    evaluator = Get_Input_and_Check_Output('testCase1.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
