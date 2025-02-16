@@ -17,6 +17,34 @@ class Node:
         self.index = index  # Instance attribute
         # self. = age  # Instance attribute
 
+class DisjointSet:
+    def __init__(self, n):
+        self.parent = [i for i in range(n)]
+        self.rank = [0 for i in range(n)]
+    
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+
+    def union(self, x, y):
+        x_root = self.find(x)
+        y_root = self.find(y)
+
+        if x_root == y_root:
+            return
+        
+        if self.rank[x_root] < self.rank[y_root]:
+            self.parent[x_root] = y_root
+        elif self.rank[x_root] > self.rank[y_root]:
+            self.parent[y_root] = x_root
+        else:
+            self.parent[y_root] = x_root
+            self.rank[x_root] += 1
+
+    def is_same_set(self, x, y):
+        return self.find(x) == self.find(y)
+
 class Inference:
     def __init__(self, data):
         """
@@ -58,22 +86,24 @@ class Inference:
                     self.nodes[candp["cliques"][i]].neighbours.append(candp["cliques"][j])
                     self.nodes[candp["cliques"][j]].neighbours.append(candp["cliques"][i])
 
-            # Add the potentials to the potentials dictionary  
-            self.potentials[tuple(candp["cliques"])] = {}
+            # Add the potentials to the potentials dictionary
+            if self.potentials.get(tuple(candp["cliques"])) is None:
+                self.potentials[tuple(candp["cliques"])] = {}
             if(len(candp["cliques"]) == 1):
                  
                  index_list = ['#']*self.VariablesCount 
                  index_list[candp["cliques"][0]] = '1'
                  index = ''.join(index_list)
-                 if self.potentials.get(tuple(candp["cliques"])) is not None:
+
+                 if index in self.potentials.get(tuple(candp["cliques"])):
                     self.potentials[tuple(candp["cliques"])][index] *= candp["potentials"][1]
                  else :
                     self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][1]
 
                  index_list = ['#']*self.VariablesCount 
                  index_list[candp["cliques"][0]]= '0'
-                 index = ''.join(index_list)
-                 if self.potentials.get(tuple(candp["cliques"])) is not None:
+                 index = ''.join(index_list) 
+                 if index in self.potentials.get(tuple(candp["cliques"])):
                     self.potentials[tuple(candp["cliques"])][index] *= candp["potentials"][0]
                  else :
                     self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][0]
@@ -85,12 +115,29 @@ class Inference:
                         index_list[candp["cliques"][0]] = str(i)
                         index_list[candp["cliques"][1]] = str(j)
                         index = ''.join(index_list)
-                        if self.potentials.get(tuple(candp["cliques"])) is not None:
+                        if index in self.potentials.get(tuple(candp["cliques"])):
                             self.potentials[tuple(candp["cliques"])][index] *= candp["potentials"][count]
+                        else :
+                            self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][count]
                         count += 1
-            print(f'graph {self.graph} {candp["cliques"]}')
+        print('graph', self.graph)
+        # print("_"*100)
+        # print(f'potentials {self.potentials}')
+        for i in self.potentials:
+            # print(f'{i} {self.potentials[i]}')
+            if(len(i) == 1):
+                continue
+            for j in self.potentials[i]:
+                for k in range(len(j)):
+                    if j[k] != '#' and tuple([k]) in self.potentials:
+                        index_list = ['#']*self.VariablesCount
+                        index_list[k] = j[k]
+                        index = ''.join(index_list)
+                        # print(f'i {i} j {j} index {index} {self.potentials[i][j]} {self.potentials[tuple([k])][index]}')
+                        self.potentials[i][j] *= self.potentials[tuple([k])][index]
+                        # print(f'potentials {self.potentials[i][j]}')
         print("_"*100)
-        print(self.potentials)
+        print(f'potentials {self.potentials}')
         pass
 
     def isSimplicial(self, node, graph):
@@ -132,14 +179,11 @@ class Inference:
 
         Refer to the problem statement for details on triangulation and clique extraction.
         """
-        print("#"*100)
-        print(f'graph {self.graph}')
         simplicial_vertices = []
         # First find the initial simplicial vertices
         for i in range(self.VariablesCount):
             if self.isSimplicial(i, self.graph):
-                simplicial_vertices.append(i)
-        print(f'simplicial_vertices {simplicial_vertices}')
+                simplicial_vertices.append(i) 
         # Copy the graph and simplicial vertices 
         copy_graph = [self.graph[i].copy() for i in range(self.VariablesCount)]
         simplicial_vertices_set = set(simplicial_vertices)
@@ -179,7 +223,7 @@ class Inference:
                 # Add the min_degree_vertex to the simplicial vertices
                 new_simplicial_vertices.append(min_degree_vertex)
                 simplicial_vertices_set.add(min_degree_vertex)
-            print(f'new_simplicial_vertices {new_simplicial_vertices} {simplicial_vertices_set} \n copy_graph {copy_graph}')
+            # print(f'new_simplicial_vertices {new_simplicial_vertices} {simplicial_vertices_set} \n copy_graph {copy_graph}')
             simplicial_vertices.extend(new_simplicial_vertices)
 
         self.clique_list = []
@@ -198,7 +242,7 @@ class Inference:
         for i in range(len(self.clique_list)):
             self.clique_list[i] = sorted(self.clique_list[i])
         
-        print(self.clique_list)
+        print(f'cliques {self.clique_list}')
         # print("#"*100)
         # print(f'ordering{ordering}')
         # print("#"*100)
@@ -206,7 +250,7 @@ class Inference:
 
 
         pass
-
+    
     def get_junction_tree(self):
         """
         Construct the junction tree from the maximal cliques.
@@ -220,13 +264,15 @@ class Inference:
         Refer to the problem statement for details on junction tree construction.
         """
         self.junction_tree = [[] for i in range(len(self.clique_list))]
+        ds = DisjointSet(len(self.clique_list))
         for i in range(len(self.clique_list)):
             for j in range(i+1, len(self.clique_list)):
-                if len(set(self.clique_list[i]).intersection(set(self.clique_list[j]))) != 0:
+                if len(set(self.clique_list[i]).intersection(set(self.clique_list[j]))) != 0 and ds.find(i) != ds.find(j):
                     self.junction_tree[i].append(j)
                     self.junction_tree[j].append(i)
+                    ds.union(i, j)
 
-        print(self.junction_tree)
+        print(f'junction tree {self.junction_tree}')
         pass
 
     def assign_potentials_to_cliques(self):
@@ -240,49 +286,69 @@ class Inference:
         
         Refer to the sample test case for how potentials are associated with cliques.
         """
-        # junction_tree_potentials = []
-        # for i in range(0,len(self.junction_tree)):
-        #     if(len)
-        # pass
-        print("#"*100)
-        print(f'potentials {self.potentials}')
-        self.junction_tree_potentials = [[] for i in range(len(self.junction_tree))]
-        for cliq, index in zip(self.clique_list, range(len(self.clique_list))):
+
+        self.junction_tree_potentials = [{} for i in range(len(self.junction_tree))]
+
+        for cliq, index in zip(self.clique_list, range(len(self.clique_list))): 
             if len(cliq) == 1:
                 self.junction_tree_potentials[index] = self.potentials.get(tuple([cliq[0]]))
-
             for i in range(len(cliq)):
-                for j in range(len(cliq)):
+                for j in range(len(cliq)): 
                     if self.potentials.get(tuple([cliq[i], cliq[j]])) is not None:
-                        if self.junction_tree_potentials[index] == []:
+                        if self.junction_tree_potentials[index] == {}:
                             self.junction_tree_potentials[index] = self.potentials.get(tuple([cliq[i], cliq[j]]))
                         else:
-                            new_potential = {}
-                            for x in self.junction_tree_potentials[i]:
-                                for y in self.potentials.get(tuple([cliq[i], cliq[j]])):
-                                    non_hash_indices = [k for k in range(self.VariablesCount) if x[k] != '#']
-                                    common_indices = [k for k in range(self.VariablesCount) if k in non_hash_indices and k in y]
-                                    non_hash_minus_common_indices = [k for k in range(self.VariablesCount) if k in non_hash_indices and k not in common_indices]
-                                    cliq_indices = [k for k in range(self.VariablesCount) if k in cliq and k not in common_indices]
-                                    indices = non_hash_indices+cliq_indices
-                                    for i in range(2**len(indices)):
-                                        index_list1 = ['#']*self.VariablesCount
-                                        index_list2 = ['#']*self.VariablesCount
-                                        for idx in range(len(non_hash_indices)):
-                                            index_list1[non_hash_indices[idx]] = '1' if (i & (1 << idx)) else '0'
-                                        for idx in range(len(non_hash_indices), len(indices)):
-                                            index_list2[indices[idx]] = '1' if (i & (1 << idx)) else '0'
-                                        index1 = ''.join(index_list1)
-                                        index2 = ''.join(index_list2)
-                                        index = ''.join(index_list1+index_list2)
-                                    new_potential[index] = self.junction_tree_potentials[index1]*self.potentials.get(tuple([cliq[i], cliq[j]]))[index2]
-                            self.junction_tree_potentials[index] = new_potential
+                            new_potential = {} 
+                            for x in self.junction_tree_potentials[index]:
+                                
+                                for y in self.potentials.get(tuple([cliq[i], cliq[j]])):  
+                                    new_index_list = ['#']*self.VariablesCount
+                                    intersection_found = False
+                                    curr_potential = 0
+                                    break_outer_loop = False
+                                    for p in range(self.VariablesCount):
+                                        if x[p] != '#' and y[p] != '#':
+                                            if x[p] != y[p]:
+                                                break_outer_loop = True
+                                                intersection_found = False
+                                                break
+                                            else:
+                                                intersection_found = True
+                                            curr_potential = self.junction_tree_potentials[index][x]*self.potentials.get(tuple([cliq[i], cliq[j]]))[y]
+                                        if(x[p] != '#' or y[p] != '#'):
+                                            new_index_list[p] = x[p] if x[p] != '#' else y[p] 
+                                    if break_outer_loop:
+                                        continue 
+                                    if intersection_found:
+                                        new_index = ''.join(new_index_list) 
+                                        new_potential[new_index] = curr_potential 
+                            self.junction_tree_potentials[index] = new_potential 
         
         
         print("#"*100)
         print(f'junction_tree_potentials {self.junction_tree_potentials}')
         pass
     
+    def traverse_reverse_level_order(self, root):
+        visited = [False for i in range(len(self.junction_tree))]
+        queue = []
+        queue.append(root)
+        visited[root] = True
+        traversal = []
+        while len(queue) != 0:
+            s = queue.pop(0)
+            traversal.append(s)  
+            for i in self.junction_tree[s]:
+                if visited[i] == False:
+                    queue.append(i)
+                    visited[i] = True  
+
+        
+        reverse_traversal = []
+        for i in traversal:
+            reverse_traversal.insert(0, i)
+        return reverse_traversal
+
     def get_z_value(self):
         """
         Compute the partition function (Z value) of the graphical model.
@@ -294,6 +360,8 @@ class Inference:
         
         Refer to the problem statement for details on computing the partition function.
         """
+        traversal = self.traverse_reverse_level_order(0)
+        print(f'traversal {traversal}')
         pass
 
     def compute_marginals(self):
