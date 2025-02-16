@@ -58,14 +58,6 @@ class Inference:
 
             self.potentials.append(candp["potentials"])
                 
-        print(self.graph)
-
-        print("#####################################")
-
-        print(self.potentials)
-
-        print(self.k_value)
-
         pass
 
     def isSimplicial(self, node, graph):
@@ -87,6 +79,13 @@ class Inference:
                     self.graph[graph[node][i]].append(self.graph[node][j])
                     self.graph[graph[node][j]].append(self.graph[node][i])
         pass
+    
+    def forms_clique(self, ordering):
+        for i in range(len(ordering)):
+            for j in range(i+1, len(ordering)):
+                if ordering[j] not in self.graph[ordering[i]] and ordering[i] not in self.graph[ordering[j]]:
+                    return False
+        return True
 
     def triangulate_and_get_cliques(self):  
         """
@@ -147,10 +146,25 @@ class Inference:
                 new_simplicial_vertices.append(min_degree_vertex)
                 simplicial_vertices_set.add(min_degree_vertex)
             simplicial_vertices.extend(new_simplicial_vertices)
-        print("#"*100)
-        print(f'ordering{ordering}')
-        print("#"*100)
-        print(f'graph {self.graph}')
+
+        self.clique_list = []
+        visited = set()
+        print(ordering)
+        for i in range(len(ordering)):
+            new_clique = []
+            new_clique.append(ordering[i])
+            new_clique += [j for j in self.graph[ordering[i]] if j not in visited]
+            self.clique_list.append(new_clique)
+            visited.add(ordering[i])
+            
+            if(self.forms_clique(ordering[i:])):
+                break
+
+        print(self.clique_list)
+        # print("#"*100)
+        # print(f'ordering{ordering}')
+        # print("#"*100)
+        # print(f'graph {self.graph}')
 
 
         pass
@@ -167,6 +181,14 @@ class Inference:
 
         Refer to the problem statement for details on junction tree construction.
         """
+        self.junction_tree = [[] for i in range(len(self.clique_list))]
+        for i in range(len(self.clique_list)):
+            for j in range(i+1, len(self.clique_list)):
+                if len(set(self.clique_list[i]).intersection(set(self.clique_list[j]))) != 0:
+                    self.junction_tree[i].append(j)
+                    self.junction_tree[j].append(i)
+
+        print(self.junction_tree)
         pass
 
     def assign_potentials_to_cliques(self):
@@ -180,7 +202,10 @@ class Inference:
         
         Refer to the sample test case for how potentials are associated with cliques.
         """
-        pass
+        # junction_tree_potentials = []
+        # for i in range(0,len(self.junction_tree)):
+        #     if(len)
+        # pass
 
     def get_z_value(self):
         """
