@@ -83,8 +83,8 @@ class Inference:
                         self.graph[candp["cliques"][j]].append(candp["cliques"][i])
 
                     # Add neighbours to the nodes
-                    self.nodes[candp["cliques"][i]].neighbours.append(candp["cliques"][j])
-                    self.nodes[candp["cliques"][j]].neighbours.append(candp["cliques"][i])
+                    # self.nodes[candp["cliques"][i]].neighbours.append(candp["cliques"][j])
+                    # self.nodes[candp["cliques"][j]].neighbours.append(candp["cliques"][i])
 
             # Add the potentials to the potentials dictionary
             if self.potentials.get(tuple(candp["cliques"])) is None:
@@ -121,9 +121,6 @@ class Inference:
                             self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][count]
                         count += 1
         print('graph', self.graph)
- 
-        print("_"*100)
-        print(f'potentials {self.potentials}')
         for i in self.potentials:
             # print(f'{i} {self.potentials[i]}')
             if(len(i) == 1):
@@ -133,10 +130,9 @@ class Inference:
                     if j[k] != '#' and tuple([k]) in self.potentials:
                         index_list = ['#']*self.VariablesCount
                         index_list[k] = j[k]
-                        index = ''.join(index_list)
-                        print(f'i {i} j {j} index {index} {self.potentials[i][j]} {self.potentials[tuple([k])][index]}')
-                        self.potentials[i][j] *= self.potentials[tuple([k])][index]
-                        print(f'potentials {self.potentials[i][j]}')
+                        index = ''.join(index_list) 
+                        self.potentials[i][j] *= self.potentials[tuple([k])][index] 
+        
         print("_"*100)
         print(f'potentials {self.potentials}')
         pass
@@ -264,15 +260,32 @@ class Inference:
 
         Refer to the problem statement for details on junction tree construction.
         """
+        # self.junction_tree = [[] for i in range(len(self.clique_list))]
+        # ds = DisjointSet(len(self.clique_list))
+        # for i in range(len(self.clique_list)):
+        #     for j in range(i+1, len(self.clique_list)):
+        #         if len(set(self.clique_list[i]).intersection(set(self.clique_list[j]))) != 0 and ds.find(i) != ds.find(j):
+        #             self.junction_tree[i].append(j)
+        #             self.junction_tree[j].append(i)
+        #             ds.union(i, j)
         self.junction_tree = [[] for i in range(len(self.clique_list))]
-        ds = DisjointSet(len(self.clique_list))
+        edges_list = []
         for i in range(len(self.clique_list)):
             for j in range(i+1, len(self.clique_list)):
-                if len(set(self.clique_list[i]).intersection(set(self.clique_list[j]))) != 0 and ds.find(i) != ds.find(j):
-                    self.junction_tree[i].append(j)
-                    self.junction_tree[j].append(i)
-                    ds.union(i, j)
+                intersection_set = set(self.clique_list[i]).intersection(set(self.clique_list[j])) 
+                edges_list.append([i, j, len(intersection_set)])
 
+        edges_list = sorted(edges_list, key = lambda x: x[2], reverse = True)
+        print(f'edges_list {edges_list}')
+        ds = DisjointSet(len(self.clique_list))
+        for i in range(len(edges_list)):
+            if ds.find(edges_list[i][0]) != ds.find(edges_list[i][1]):
+                self.junction_tree[edges_list[i][0]].append(edges_list[i][1])
+                self.junction_tree[edges_list[i][1]].append(edges_list[i][0])
+                ds.union(edges_list[i][0], edges_list[i][1])
+
+        
+        print("#"*100) 
         print(f'junction tree {self.junction_tree}')
         pass
 
@@ -328,6 +341,7 @@ class Inference:
         
         print("#"*100)
         print(f'junction_tree_potentials {self.junction_tree_potentials}')
+        print("#"*100)
         pass
     
     def traverse_reverse_level_order(self, root):
@@ -381,7 +395,7 @@ class Inference:
                     if set2.difference(set1) == set(): # If set2 is a subset of set1
                         result[key1] = value1 * value2
                         # print(f'key1 {key1} key2 {key2} value1 {value1} value2 {value2} {result[key1]}')
-            
+            print(f'potential1 {potential1} \npotential2 {potential2} \nresult {result}')
             return result
 
         def sum_out_variable(potential, variable_index):
@@ -406,10 +420,11 @@ class Inference:
             for neighbor in self.junction_tree[node]:
                 if neighbor != parent and neighbor not in visited:
                     collect_messages(neighbor, node) 
+                    print(f'node {node} neighbor {neighbor}')
                     incoming_potential = multiply_potentials(incoming_potential, messages[neighbor])
-                    print('_'*100)
-                    print(f'node {node} parent {parent}')
-                    print(f'incoming_potential {incoming_potential} \n messages[neighbor] {messages[neighbor]}')
+                    # print('_'*100)
+                    # print(f'node {node} parent {parent}')
+                    # print(f'incoming_potential {incoming_potential} \n messages[neighbor] {messages[neighbor]}')
             
             # Sum out variables not in the separator set (between parent and child)
             if parent is not None:
@@ -420,12 +435,12 @@ class Inference:
                         incoming_potential = sum_out_variable(incoming_potential, var)
 
             messages[node] = incoming_potential
-            print(f'incoming_potential {incoming_potential}')
+            # print(f'incoming_potential {incoming_potential}')
 
         collect_messages(root, None)
 
         # Step 3: Compute Z value
-        print(f'messages {messages}')
+        # print(f'messages {messages}')
         z_value = sum(messages[root].values())
         print(z_value)
         pass
