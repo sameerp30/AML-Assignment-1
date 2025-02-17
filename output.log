@@ -1,0 +1,92 @@
+def assign_potentials_to_cliques(self):
+    """
+    Assign potentials to the cliques in the junction tree.
+    
+    What to do here:
+    ----------------
+    - Map the given potentials (from the input data) to the corresponding cliques in the junction tree.
+    - Ensure the potentials are correctly associated with the cliques for message passing.
+    
+    Refer to the sample test case for how potentials are associated with cliques.
+    """
+    self.jt_assigned_cliques = {}
+    assigned_cliques = []
+    for nodes in self.junction_tree:
+        for clique in self.cliques:
+            if tuple(clique) in assigned_cliques:
+                continue
+            if not set(clique) - set(nodes):
+                self.jt_assigned_cliques.setdefault(tuple(nodes), []).append(tuple(clique))
+                assigned_cliques.append(tuple(clique))
+    print("potentials: ")#, self.potentials)
+    print_graph(self.potentials)
+    print()
+    print()
+
+    print("self.jt_assigned_cliques: ") #, json.dumps(self.jt_assigned_cliques, indent=4))
+    print_graph(self.jt_assigned_cliques)
+    print()
+    print()
+
+    self.jt_potentials = {}
+    for jt_node, cliques_list in self.jt_assigned_cliques.items():
+        self.jt_potentials[tuple(jt_node)] = []
+        len_max_bin = len(bin(2**len(jt_node))[2:]) - 1
+        for i in range(2**len(jt_node)):
+            prod = 1
+            b_i = bin(i)[2:]
+            b_i = "0"*(len_max_bin - len(b_i)) + b_i
+            var_values = {k: int(b_i[j]) for j, k in enumerate(jt_node)}
+            for clique in cliques_list:
+                clique_val = ''.join([str(var_values[j]) for j in clique])
+                pot_idx = int(clique_val, 2)
+                for potential in self.potentials[clique]:
+                    prod *= potential[pot_idx]
+            self.jt_potentials[tuple(jt_node)].append(prod)
+
+    print("self.jt_potentials: ") #, json.dumps(self.jt_potentials, indent=4))
+    print_graph(self.jt_potentials)
+
+
+maximal_cliques:  [{0, 1, 4}, {0, 2, 3}, {0, 2, 4}]
+junction_tree:  {(0, 1, 4): [(0, 2, 4)], (0, 2, 3): [(0, 2, 4)], (0, 2, 4): [(0, 2, 3), (0, 1, 4)]}
+potentials: 
+(0,): [[11, 4]]
+(1,): [[8, 12]]
+(2,): [[19, 3]]
+(3,): [[11, 6]]
+(4,): [[12, 8], [5, 9]]
+(2, 4): [[20, 18, 3, 6], [15, 18, 12, 14]]
+(0, 2): [[19, 6, 4, 1], [9, 19, 20, 9]]
+(1, 4): [[14, 5, 20, 20]]
+(0, 3): [[8, 8, 13, 12], [9, 7, 17, 9]]
+(0, 1): [[5, 3, 8, 11]]
+(2, 3): [[17, 15, 18, 2]]
+
+
+self.jt_assigned_cliques: 
+(0, 1, 4): [(0,), (1,), (4,), (1, 4), (0, 1)]
+(0, 2, 3): [(2,), (3,), (0, 2), (0, 3), (2, 3)]
+(0, 2, 4): [(2, 4)]
+
+
+self.jt_potentials: 
+(0, 1, 4): [369600, 158400, 475200, 570240, 215040, 92160, 633600, 760320]
+(0, 2, 3): [43744536, 16374960, 4875552, 229824, 62817040, 14774400, 1181466, 34992]
+(0, 2, 4): [300, 324, 36, 84, 300, 324, 36, 84]
+
+
+Messages: 
+((0, 2, 3), (0, 2, 4)): [60119496, 5105376, 77591440, 1216458]
+((0, 2, 4), (0, 1, 4)): [18219642336, 19907568288, 23321224488, 25241809032]
+((0, 1, 4), (0, 2, 4)): [844800, 728640, 848640, 852480]
+((0, 2, 4), (0, 2, 3)): [489519360, 91618560, 530795520, 102159360]
+
+
+Z: 
+71206865715916800
+
+
+Marginals: 
+[[0.41986687803530415, 0.5801331219646958], [0.24195166695340647, 0.7580483330465935], [0.9916859173315207, 0.008314082668479345], [0.7769502137962812, 0.22304978620371885], [0.49409951471975316, 0.5059004852802468]]
+top_k_results:  [{'assignment': [1, 1, 0, 0, 1], 'probability': 0.5644599303135889}, {'assignment': [1, 1, 0, 0, 0], 'probability': 0.4355400696864111}]
