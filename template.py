@@ -121,8 +121,9 @@ class Inference:
                             self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][count]
                         count += 1
         print('graph', self.graph)
-        # print("_"*100)
-        # print(f'potentials {self.potentials}')
+ 
+        print("_"*100)
+        print(f'potentials {self.potentials}')
         for i in self.potentials:
             # print(f'{i} {self.potentials[i]}')
             if(len(i) == 1):
@@ -133,9 +134,9 @@ class Inference:
                         index_list = ['#']*self.VariablesCount
                         index_list[k] = j[k]
                         index = ''.join(index_list)
-                        # print(f'i {i} j {j} index {index} {self.potentials[i][j]} {self.potentials[tuple([k])][index]}')
+                        print(f'i {i} j {j} index {index} {self.potentials[i][j]} {self.potentials[tuple([k])][index]}')
                         self.potentials[i][j] *= self.potentials[tuple([k])][index]
-                        # print(f'potentials {self.potentials[i][j]}')
+                        print(f'potentials {self.potentials[i][j]}')
         print("_"*100)
         print(f'potentials {self.potentials}')
         pass
@@ -365,8 +366,21 @@ class Inference:
             
             for key1, value1 in potential1.items():
                 for key2, value2 in potential2.items():
-                    merged_key = ''.join([k1 if k1 != '#' else k2 for k1, k2 in zip(key1, key2)])
-                    result[merged_key] = result.get(merged_key, 0) + value1 * value2
+                    # merged_key = ''.join([k1 if k1 != '#' else k2 for k1, k2 in zip(key1, key2)])
+                    # result[merged_key] = result.get(merged_key, 0) + value1 * value2
+                    set1 = set([i for i in range(len(key1)) if key1[i] != '#'])
+                    set2 = set([i for i in range(len(key2)) if key2[i] != '#'])
+                    # print(f'set1 {set1} set2 {set2}')
+                    equals = True
+                    for i in set2:
+                        if i in set1 and key1[i] != key2[i]:
+                            equals = False
+                            break
+                    if not equals:
+                        continue
+                    if set2.difference(set1) == set(): # If set2 is a subset of set1
+                        result[key1] = value1 * value2
+                        # print(f'key1 {key1} key2 {key2} value1 {value1} value2 {value2} {result[key1]}')
             
             return result
 
@@ -389,11 +403,13 @@ class Inference:
             """Recursively collect messages from child to parent."""
             visited.add(node)
             incoming_potential = self.junction_tree_potentials[node]
-
             for neighbor in self.junction_tree[node]:
                 if neighbor != parent and neighbor not in visited:
-                    collect_messages(neighbor, node)
+                    collect_messages(neighbor, node) 
                     incoming_potential = multiply_potentials(incoming_potential, messages[neighbor])
+                    print('_'*100)
+                    print(f'node {node} parent {parent}')
+                    print(f'incoming_potential {incoming_potential} \n messages[neighbor] {messages[neighbor]}')
             
             # Sum out variables not in the separator set (between parent and child)
             if parent is not None:
@@ -403,13 +419,14 @@ class Inference:
                     if var not in separator:
                         incoming_potential = sum_out_variable(incoming_potential, var)
 
-                messages[node] = incoming_potential
-            print(f'node {node} parent {parent} incoming_potential {incoming_potential}')
+            messages[node] = incoming_potential
+            print(f'incoming_potential {incoming_potential}')
 
         collect_messages(root, None)
 
         # Step 3: Compute Z value
-        z_value = sum(self.junction_tree_potentials[root].values())
+        print(f'messages {messages}')
+        z_value = sum(messages[root].values())
         print(z_value)
         pass
 
@@ -476,6 +493,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
+    evaluator = Get_Input_and_Check_Output('testCase1.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
