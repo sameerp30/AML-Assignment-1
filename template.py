@@ -360,8 +360,57 @@ class Inference:
         
         Refer to the problem statement for details on computing the partition function.
         """
-        traversal = self.traverse_reverse_level_order(0)
-        print(f'traversal {traversal}')
+        def multiply_potentials(potential1, potential2): 
+            result = {}
+            
+            for key1, value1 in potential1.items():
+                for key2, value2 in potential2.items():
+                    merged_key = ''.join([k1 if k1 != '#' else k2 for k1, k2 in zip(key1, key2)])
+                    result[merged_key] = result.get(merged_key, 0) + value1 * value2
+            
+            return result
+
+        def sum_out_variable(potential, variable_index):
+            """Sum out a variable from a potential table."""
+            new_potential = {}
+            for key in potential:
+                new_key = key[:variable_index] + '#' + key[variable_index + 1:]
+                new_potential[new_key] = new_potential.get(new_key, 0) + potential[key]
+            return new_potential
+
+        # Step 1: Select a root clique
+        root = 0  # Choosing the first clique as the root
+
+        # Step 2: Perform upward (collect) message passing
+        visited = set()
+        messages = {}
+
+        def collect_messages(node, parent):
+            """Recursively collect messages from child to parent."""
+            visited.add(node)
+            incoming_potential = self.junction_tree_potentials[node]
+
+            for neighbor in self.junction_tree[node]:
+                if neighbor != parent and neighbor not in visited:
+                    collect_messages(neighbor, node)
+                    incoming_potential = multiply_potentials(incoming_potential, messages[neighbor])
+            
+            # Sum out variables not in the separator set (between parent and child)
+            if parent is not None:
+                separator = set(self.clique_list[node]) & set(self.clique_list[parent])
+                print(f'separator {separator}')
+                for var in self.clique_list[node]:
+                    if var not in separator:
+                        incoming_potential = sum_out_variable(incoming_potential, var)
+
+                messages[node] = incoming_potential
+            print(f'node {node} parent {parent} incoming_potential {incoming_potential}')
+
+        collect_messages(root, None)
+
+        # Step 3: Compute Z value
+        z_value = sum(self.junction_tree_potentials[root].values())
+        print(z_value)
         pass
 
     def compute_marginals(self):
@@ -427,6 +476,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('testCase1.json')
+    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
