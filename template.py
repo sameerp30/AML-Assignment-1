@@ -14,8 +14,7 @@ class Node:
     neighbours = []
     def __init__(self, index):
 
-        self.index = index  # Instance attribute
-        # self. = age  # Instance attribute
+        self.index = index  # Instance attribute 
 
 class DisjointSet:
     def __init__(self, n):
@@ -82,10 +81,6 @@ class Inference:
                     if candp["cliques"][i] not in self.graph[candp["cliques"][j]]:
                         self.graph[candp["cliques"][j]].append(candp["cliques"][i])
 
-                    # Add neighbours to the nodes
-                    # self.nodes[candp["cliques"][i]].neighbours.append(candp["cliques"][j])
-                    # self.nodes[candp["cliques"][j]].neighbours.append(candp["cliques"][i])
-
             # Add the potentials to the potentials dictionary
             if self.potentials.get(tuple(candp["cliques"])) is None:
                 self.potentials[tuple(candp["cliques"])] = {}
@@ -120,20 +115,7 @@ class Inference:
                         else :
                             self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][count]
                         count += 1
-        print('graph', self.graph)
-        '''
-        for i in self.potentials:
-            # print(f'{i} {self.potentials[i]}')
-            if(len(i) == 1):
-                continue
-            for j in self.potentials[i]:
-                for k in range(len(j)):
-                    if j[k] != '#' and tuple([k]) in self.potentials:
-                        index_list = ['#']*self.VariablesCount
-                        index_list[k] = j[k]
-                        index = ''.join(index_list) 
-                        self.potentials[i][j] *= self.potentials[tuple([k])][index] 
-        '''
+        print('graph', self.graph) 
         print("_"*100)
         print(f'potentials {self.potentials}')
         pass
@@ -240,11 +222,7 @@ class Inference:
         for i in range(len(self.clique_list)):
             self.clique_list[i] = sorted(self.clique_list[i])
         
-        print(f'cliques {self.clique_list}')
-        # print("#"*100)
-        # print(f'ordering{ordering}')
-        # print("#"*100)
-        # print(f'graph {self.graph}')
+        print(f'cliques {self.clique_list}') 
 
 
         pass
@@ -261,14 +239,7 @@ class Inference:
 
         Refer to the problem statement for details on junction tree construction.
         """
-        # self.junction_tree = [[] for i in range(len(self.clique_list))]
-        # ds = DisjointSet(len(self.clique_list))
-        # for i in range(len(self.clique_list)):
-        #     for j in range(i+1, len(self.clique_list)):
-        #         if len(set(self.clique_list[i]).intersection(set(self.clique_list[j]))) != 0 and ds.find(i) != ds.find(j):
-        #             self.junction_tree[i].append(j)
-        #             self.junction_tree[j].append(i)
-        #             ds.union(i, j)
+
         self.junction_tree = [[] for i in range(len(self.clique_list))]
         edges_list = []
         for i in range(len(self.clique_list)):
@@ -289,70 +260,6 @@ class Inference:
         print("#"*100) 
         print(f'junction tree {self.junction_tree}')
         pass
-    # def assign_potentials_to_cliques(self):
-    #     """
-    #     Assign potentials to the cliques in the junction tree.
-        
-    #     What to do here:
-    #     ----------------
-    #     - Map the given potentials (from the input data) to the corresponding cliques in the junction tree.
-    #     - Ensure the potentials are correctly associated with the cliques for message passing.
-        
-    #     Refer to the sample test case for how potentials are associated with cliques.
-    #     """
-    #     self.jt_assigned_cliques = {}  # Dictionary to store assigned cliques
-    #     assigned_cliques = []  # To track assigned potentials
-
-    #     # Assign each potential to the smallest clique that contains it
-    #     for nodes in self.junction_tree:
-    #         for clique in self.potentials.keys():
-    #             clique_tuple = tuple(clique)
-    #             if clique_tuple in assigned_cliques:
-    #                 continue
-    #             if set(clique).issubset(set(nodes)):  # Check if clique is within junction tree node
-    #                 self.jt_assigned_cliques.setdefault(tuple(nodes), []).append(clique_tuple)
-    #                 assigned_cliques.append(clique_tuple)
-
-    #     print("Potentials Mapping:")
-    #     print(self.potentials)
-    #     print()
-        
-    #     print("Junction Tree Assigned Cliques:")
-    #     print(self.jt_assigned_cliques)
-    #     print()
-
-    #     # Compute potentials for each clique
-    #     self.jt_potentials = {}
-
-    #     for jt_node, cliques_list in self.jt_assigned_cliques.items():
-    #         self.jt_potentials[tuple(jt_node)] = {}
-    #         len_max_bin = len(bin(2**len(jt_node))[2:]) - 1  # Binary length of clique
-
-    #         for i in range(2**len(jt_node)):  # Iterate over all possible assignments
-    #             prod = 1
-    #             b_i = bin(i)[2:].zfill(len_max_bin)  # Convert to binary and pad
-    #             var_values = {k: int(b_i[j]) for j, k in enumerate(jt_node)}
-
-    #             # Multiply relevant potentials
-    #             for clique in cliques_list:
-    #                 clique_val = ''.join(str(var_values[j]) for j in clique)
-
-    #                 if clique in self.potentials:  # Check if clique has an assigned potential
-    #                     pot_dict = self.potentials[clique]
-
-    #                     # Find the matching potential entry
-    #                     for pot_key, pot_value in pot_dict.items():
-    #                         if all(
-    #                             pot_key[pos] == str(var_values[var]) or pot_key[pos] == "#"
-    #                             for pos, var in enumerate(clique)
-    #                         ):
-    #                             prod *= pot_value
-    #                             break  # Stop after finding the first match
-
-    #             self.jt_potentials[tuple(jt_node)][b_i] = prod
-
-    #     print("Junction Tree Potentials:")
-    #     print(self.jt_potentials)
 
     def assign_potentials_to_cliques(self):
         """
@@ -387,11 +294,11 @@ class Inference:
                             else:
                                 self.junction_tree_potentials[idx][index] = self.potentials[cliq][index2]
 
-        print("#"*100)
-        for p in self.junction_tree_potentials:
-            print(p)
+        # print("#"*100)
+        # for p in self.junction_tree_potentials:
+        #     print(p)
 
-        print("\n\n\n")
+        # print("\n\n\n")
         pass
     
 
@@ -406,6 +313,7 @@ class Inference:
         
         Refer to the problem statement for details on computing the partition function.
         """
+        final_beliefs = {}
         def multiply_potentials(potential1, potential2): 
             result = {}
             
@@ -438,7 +346,7 @@ class Inference:
             return new_potential
 
         # Step 1: Select a root clique
-        root = 0  # Choosing the first clique as the root
+        root = 2  # Choosing the first clique as the root
 
         # Step 2: Perform upward (collect) message passing
         visited = set()
@@ -456,8 +364,8 @@ class Inference:
                     # print('_'*100)
                     # print(f'node {node} parent {parent}')
                     # print(f'incoming_potential {incoming_potential} \n messages[neighbor] {messages[neighbor]}')
-            
             # Sum out variables not in the separator set (between parent and child)
+            final_beliefs[node] = incoming_potential
             if parent is not None:
                 separator = set(self.clique_list[node]) & set(self.clique_list[parent])
                 # print(f'separator {separator}')
@@ -471,11 +379,17 @@ class Inference:
         collect_messages(root, None)
 
         # Step 3: Compute Z value 
+        self.final_beliefs = final_beliefs
         self.messages = messages
         for msg in messages:
             print(f'{msg} {messages[msg]}')
         z_value = sum(messages[root].values())
+        self.z_value = z_value
         print(z_value)
+        print('-'*100)
+        # print(f'Final Beliefs')
+        # for fb in final_beliefs:
+        #     print(f'{fb} {final_beliefs[fb]}')
         pass
 
     def compute_marginals(self):
@@ -490,9 +404,12 @@ class Inference:
         Refer to the sample test case for the expected format of the marginals.
         """
         visited = set()
-        final_beliefs = {}
+        visited_variable = set()
+        marginals = {}
+        root = 2
         def multiply_potentials(potential1, potential2): 
             """Multiply two potential tables."""
+            
             result = {}
             for key1, value1 in potential1.items():
                 for key2, value2 in potential2.items():
@@ -505,57 +422,92 @@ class Inference:
                     if set2.issubset(set1):  # If set2 is a subset of set1
                         result[key1] = result.get(key1, 0) + value1 * value2
             return result
-
+        def divide_potentials(potential1, potential2): 
+            result = {}
+            for key1, value1 in potential1.items():
+                for key2, value2 in potential2.items():
+                    set1 = {i for i in range(len(key1)) if key1[i] != '#'}
+                    set2 = {i for i in range(len(key2)) if key2[i] != '#'}
+                    
+                    if any(i in set1 and key1[i] != key2[i] for i in set2):
+                        continue  # Skip mismatched keys
+                    
+                    if set2.issubset(set1):  # If set2 is a subset of set1
+                        result[key1] = result.get(key1, 0) + value1 * (1/value2)
+            return result
         def sum_out_variable(potential, variable_index):
-            """Sum out a variable from a potential table."""
+            """Sum out a variable from a potential table.""" 
             new_potential = {}
             for key, value in potential.items():
                 new_key = key[:variable_index] + '#' + key[variable_index + 1:]
                 new_potential[new_key] = new_potential.get(new_key, 0) + value
             return new_potential
         
+        def get_marginals(potential, variable_index):
+
+            new_potential = {}
+            for key, value in potential.items():
+                new_key = key[:variable_index] + '#' + key[variable_index + 1:]
+                curr_key = 1 if key[variable_index] == '1' else 0
+                new_potential[curr_key] = new_potential.get(curr_key, 0) + value
+            return new_potential
         def distribute_messages(node, parent, parent_potential=None):
-            """Recursively distribute messages from parent to child."""
+            """Recursively distribute messages from parent to child.""" 
+            # print(f"node {node} parent potentials")
+            # print(f'clique {self.clique_list[node]}')
+            # for p in parent_potential:
+            #     print(p, parent_potential[p])
             visited.add(node)
+            if parent != None:
+                parent_potential[node] = multiply_potentials(parent_potential[node], parent_potential[parent])
+            # print('\n\n\n')
+            # print("potentials after multiplication")
+            # for p in parent_potential:
+            #     print(p, parent_potential[p])
+            
 
-            # Compute the belief at this node
-            belief = self.junction_tree_potentials[node]
-            if parent_potential:
-                belief = multiply_potentials(belief, parent_potential)
-
-            final_beliefs[node] = belief
-
+            for var in self.clique_list[node]: 
+                if var in visited_variable:
+                    continue
+                visited_variable.add(var)
+                current_marginals = get_marginals(parent_potential[node], var)
+                marginals[var] = current_marginals
+                # print('-----------------------------------')
+                # print(f'{current_marginals}')
+                # print('-----------------------------------')
+            
             # Pass messages to children
             for neighbor in self.junction_tree[node]:
-                if neighbor != parent and neighbor not in visited:
-                    # Compute outgoing message by summing out non-separator variables
-                    outgoing_message = belief
+                if neighbor not in visited:
                     separator = set(self.clique_list[node]) & set(self.clique_list[neighbor])
+                    current_marginals = {}
+                    for var in self.clique_list[neighbor]:
+                        if var not in separator:
+                            # print(parent_potential[node], separator)
+                            current_marginals = sum_out_variable(parent_potential[neighbor], var)
+                    outgoing_messages = dict(parent_potential)
+                    # print(f'current marginals {current_marginals}')
+                    outgoing_messages[node] = divide_potentials(outgoing_messages[node], current_marginals)
+                    
+                    current_marginals = {}
                     for var in self.clique_list[node]:
                         if var not in separator:
-                            outgoing_message = sum_out_variable(outgoing_message, var)
+                            outgoing_messages[node] = sum_out_variable(outgoing_messages[node], var)
+                    # print(f'outgoing message {outgoing_messages}')
+                    distribute_messages(neighbor, node, outgoing_messages)
 
-                    distribute_messages(neighbor, node, outgoing_message)
+
 
         # Run downward pass
-        distribute_messages(0, None)
+        distribute_messages(root, None, self.final_beliefs)
+        for mrgs in marginals:
+            print(f"variable_index {mrgs}")
+            for val in marginals[mrgs]:
+                print(f'{val} {marginals[mrgs][val]/self.z_value}')
+        print("_"*100) 
 
-        # Step 4: Compute the final marginals for each variable
-        marginals = {var: {0: 0, 1: 0} for var in range(self.VariablesCount)}
-
-        for belief in final_beliefs.values():
-            for assignment, prob in belief.items():
-                for i, val in enumerate(assignment):
-                    if val != '#':
-                        marginals[i][int(val)] += prob  # Sum probabilities for each variable state
-
-        # Step 5: Normalize the probabilities
-        marginals_list = []
-        for var in sorted(marginals.keys()):  # Sort variables to maintain order
-            total = sum(marginals[var].values())
-            marginals_list.append([marginals[var][0] / total, marginals[var][1] / total])  # Normalize
-
-        print(marginals_list)
+        print(marginals)
+        
 
     def compute_top_k(self):
         """
