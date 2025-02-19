@@ -1,6 +1,5 @@
 import json
-
-
+import heapq
 
 ########################################################################
 
@@ -377,8 +376,7 @@ class Inference:
             # print(f'node {node} incoming_potential {incoming_potential}')
 
         collect_messages(root, None)
-
-        # Step 3: Compute Z value 
+ 
         self.final_beliefs = final_beliefs
         self.messages = messages
         for msg in messages:
@@ -386,10 +384,7 @@ class Inference:
         z_value = sum(messages[root].values())
         self.z_value = z_value
         print(z_value)
-        print('-'*100)
-        # print(f'Final Beliefs')
-        # for fb in final_beliefs:
-        #     print(f'{fb} {final_beliefs[fb]}')
+        print('-'*100) 
         pass
 
     def compute_marginals(self):
@@ -430,9 +425,9 @@ class Inference:
                     set2 = {i for i in range(len(key2)) if key2[i] != '#'}
                     
                     if any(i in set1 and key1[i] != key2[i] for i in set2):
-                        continue  # Skip mismatched keys
+                        continue   
                     
-                    if set2.issubset(set1):  # If set2 is a subset of set1
+                    if set2.issubset(set1):
                         result[key1] = result.get(key1, 0) + value1 * (1/value2)
             return result
         def sum_out_variable(potential, variable_index):
@@ -452,18 +447,10 @@ class Inference:
                 new_potential[curr_key] = new_potential.get(curr_key, 0) + value
             return new_potential
         def distribute_messages(node, parent, parent_potential=None):
-            """Recursively distribute messages from parent to child.""" 
-            # print(f"node {node} parent potentials")
-            # print(f'clique {self.clique_list[node]}')
-            # for p in parent_potential:
-            #     print(p, parent_potential[p])
+            """Recursively distribute messages from parent to child."""  
             visited.add(node)
             if parent != None:
                 parent_potential[node] = multiply_potentials(parent_potential[node], parent_potential[parent])
-            # print('\n\n\n')
-            # print("potentials after multiplication")
-            # for p in parent_potential:
-            #     print(p, parent_potential[p])
             
 
             for var in self.clique_list[node]: 
@@ -472,10 +459,7 @@ class Inference:
                 visited_variable.add(var)
                 current_marginals = get_marginals(parent_potential[node], var)
                 marginals[var] = current_marginals
-                # print('-----------------------------------')
-                # print(f'{current_marginals}')
-                # print('-----------------------------------')
-            
+                 
             # Pass messages to children
             for neighbor in self.junction_tree[node]:
                 if neighbor not in visited:
@@ -483,17 +467,14 @@ class Inference:
                     current_marginals = {}
                     for var in self.clique_list[neighbor]:
                         if var not in separator:
-                            # print(parent_potential[node], separator)
                             current_marginals = sum_out_variable(parent_potential[neighbor], var)
                     outgoing_messages = dict(parent_potential)
-                    # print(f'current marginals {current_marginals}')
                     outgoing_messages[node] = divide_potentials(outgoing_messages[node], current_marginals)
                     
                     current_marginals = {}
                     for var in self.clique_list[node]:
                         if var not in separator:
                             outgoing_messages[node] = sum_out_variable(outgoing_messages[node], var)
-                    # print(f'outgoing message {outgoing_messages}')
                     distribute_messages(neighbor, node, outgoing_messages)
 
 
@@ -510,6 +491,7 @@ class Inference:
         
 
     def compute_top_k(self):
+    
         """
         Compute the top-k most probable assignments in the graphical model.
         
@@ -519,8 +501,84 @@ class Inference:
         - Return the assignments along with their probabilities in the specified format.
         
         Refer to the sample test case for the expected format of the top-k assignments.
-        """
-        pass
+        """ 
+        final_beliefs = {}
+        k = self.k_value
+        def multiply_potentials(potential1, potential2):
+            """Multiply two potential tables, keeping top-k assignments."""
+            result = []
+            for (key1, value1) in potential1:
+                for (key2, value2) in potential2:
+                    set1 = {i for i in range(len(key1)) if key1[i] != '#'}
+                    set2 = {i for i in range(len(key2)) if key2[i] != '#'}
+
+                    if any(i in set1 and key1[i] != key2[i] for i in set2):
+                        continue  # Skip mismatched keys
+
+                    merged_key = ''.join([key1[i] if key1[i] != '#' else key2[i] for i in range(len(key1))])
+                    result.append((merged_key, value1 * value2))
+
+            # Keep only top-k assignments
+            return heapq.nlargest(k, result, key=lambda x: x[1])
+
+        def sum_out_variable(potential, variable_index):
+            """Sum out a variable while keeping track of top-k assignments."""
+            grouped_potentials = {}
+
+            for assignment, prob in potential:
+                new_key = assignment[:variable_index] + '#' + assignment[variable_index + 1:]
+                if new_key not in grouped_potentials:
+                    grouped_potentials[new_key] = []
+                heapq.heappush(grouped_potentials[new_key], (-prob, assignment))  # Use min heap for top-k tracking
+
+            # Retain only top-k assignments per group
+            new_potential = []
+            for new_key, heap in grouped_potentials.items():
+                top_k_values = heapq.nsmallest(k, heap)  # Extract top-k largest
+                new_potential.extend([(assignment, -prob) for prob, assignment in top_k_values])
+
+            return new_potential
+
+        # Step 1: Select a root clique
+        root = 2  # Choose a root clique (can be changed as needed)
+
+        # Step 2: Perform upward (collect) message passing
+        visited = set()
+        messages = {}
+
+        def collect_messages(node, parent):
+            """Recursively collect messages from child to parent, keeping top-k assignments."""
+            visited.add(node)
+            incoming_potential = [(key, prob) for key, prob in self.junction_tree_potentials[node].items()]
+
+            for neighbor in self.junction_tree[node]:
+                if neighbor != parent and neighbor not in visited:
+                    collect_messages(neighbor, node)
+                    incoming_potential = multiply_potentials(incoming_potential, messages[neighbor])
+
+            final_beliefs[node] = incoming_potential
+
+            if parent is not None:
+                separator = set(self.clique_list[node]) & set(self.clique_list[parent])
+                for var in self.clique_list[node]:
+                    if var not in separator:
+                        incoming_potential = sum_out_variable(incoming_potential, var)
+
+            messages[node] = incoming_potential
+
+        collect_messages(root, None)
+
+        # Step 3: Extract top-k assignments from root message
+        top_k_assignments = heapq.nlargest(k, messages[root], key=lambda x: x[1])
+        print(top_k_assignments)
+        # Step 4: Format output
+        formatted_assignments = [(assignment.replace('#', '0'), prob/self.z_value) for assignment, prob in top_k_assignments]
+        print('_'*100)
+        
+        final_top_k_processed = [{"assignment":[int(digit) for digit in x[0]], "probability":x[1]} for x in  formatted_assignments]
+        print('top k assignments')
+        print(final_top_k_processed)
+
 
 
 
