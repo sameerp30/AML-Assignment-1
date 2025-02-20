@@ -292,7 +292,7 @@ class Inference:
         """
         final_beliefs = {}
         
-        # This function is writter with the partial help from ChatGPT
+        # This function is written with partial help from ChatGPT
         def multiply_potentials(potential1, potential2): 
             result = {}
             
@@ -312,7 +312,7 @@ class Inference:
                         result[key1] = value1 * value2 
             return result
         
-        # This function is writter with the partial help from ChatGPT
+        # This function is written with partial help from ChatGPT
         def sum_out_variable(potential, variable_index): 
             new_potential = {}
             for key in potential:
@@ -366,7 +366,7 @@ class Inference:
         marginals = {}
         root = 0
 
-        # This function is writter with the partial help from ChatGPT
+        # This function is written with partial help from ChatGPT
         def multiply_potentials(potential1, potential2):   
             result = {}
             for key1, value1 in potential1.items():
@@ -381,7 +381,7 @@ class Inference:
                         result[key1] = result.get(key1, 0) + value1 * value2
             return result
         
-        # This function is writter with the partial help from ChatGPT
+        # This function is written with partial help from ChatGPT
         def divide_potentials(potential1, potential2): 
             result = {}
             for key1, value1 in potential1.items():
@@ -396,7 +396,7 @@ class Inference:
                         result[key1] = result.get(key1, 0) + value1 * (1/value2)
             return result
         
-        # This function is writter with the partial help from ChatGPT
+        # This function is written with partial help from ChatGPT
         def sum_out_variable(potential, variable_index): 
             new_potential = {}
             for key, value in potential.items():
@@ -404,7 +404,7 @@ class Inference:
                 new_potential[index] = new_potential.get(index, 0) + value
             return new_potential
         
-        # This function is writter with the partial help from ChatGPT
+        # This function is written with partial help from ChatGPT
         def get_marginals(potential, variable_index):
             new_potential = {}
             for key, value in potential.items(): 
@@ -467,7 +467,7 @@ class Inference:
         final_beliefs = {}
         k = self.k_value
         
-        # This function is writter with the partial help from ChatGPT
+        # This function is written with partial help from ChatGPT
         def multiply_potentials(potential1, potential2): 
             result = []
             for (key1, value1) in potential1:
@@ -490,8 +490,7 @@ class Inference:
             return ans
 
         
-        # This function is writter with the partial help from ChatGPT
-
+        # This function is written with partial help from ChatGPT
         def sum_out_variable(potential, variable_index): 
             current_potentials = {}
 
