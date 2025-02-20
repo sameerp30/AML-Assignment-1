@@ -310,12 +310,11 @@ class Inference:
                         result[key1] = value1 * value2 
             return result
 
-        def sum_out_variable(potential, variable_index):
-            """Sum out a variable from a potential table."""
+        def sum_out_variable(potential, variable_index): 
             new_potential = {}
             for key in potential:
-                new_key = key[:variable_index] + '#' + key[variable_index + 1:]
-                new_potential[new_key] = new_potential.get(new_key, 0) + potential[key]
+                index = key[:variable_index] + '#' + key[variable_index + 1:]
+                new_potential[index] = new_potential.get(index, 0) + potential[key]
             return new_potential
         
         root = 0   
@@ -323,12 +322,12 @@ class Inference:
         visited = set()
         messages = {}
 
-        def collect_messages(node, parent): 
+        def traverse(node, parent): 
             visited.add(node)
             incoming_potential = self.junction_tree_potentials[node]
             for neighbor in self.junction_tree[node]:
                 if neighbor != parent and neighbor not in visited:
-                    collect_messages(neighbor, node)  
+                    traverse(neighbor, node)  
                     incoming_potential = multiply_potentials(incoming_potential, messages[neighbor]) 
 
             final_beliefs[node] = incoming_potential
@@ -340,7 +339,7 @@ class Inference:
 
             messages[node] = incoming_potential 
 
-        collect_messages(root, None)
+        traverse(root, None)
  
         self.final_beliefs = final_beliefs
         self.messages = messages 
@@ -363,6 +362,8 @@ class Inference:
         visited_variable = set()
         marginals = {}
         root = 0
+
+        # This function is writter with the partial help from ChatGPT
         def multiply_potentials(potential1, potential2):   
             result = {}
             for key1, value1 in potential1.items():
@@ -377,6 +378,7 @@ class Inference:
                         result[key1] = result.get(key1, 0) + value1 * value2
             return result
         
+        # This function is writter with the partial help from ChatGPT
         def divide_potentials(potential1, potential2): 
             result = {}
             for key1, value1 in potential1.items():
@@ -390,13 +392,15 @@ class Inference:
                     if set2.issubset(set1):
                         result[key1] = result.get(key1, 0) + value1 * (1/value2)
             return result
+        # This function is writter with the partial help from ChatGPT
         def sum_out_variable(potential, variable_index): 
             new_potential = {}
             for key, value in potential.items():
-                new_key = key[:variable_index] + '#' + key[variable_index + 1:]
-                new_potential[new_key] = new_potential.get(new_key, 0) + value
+                index = key[:variable_index] + '#' + key[variable_index + 1:]
+                new_potential[index] = new_potential.get(index, 0) + value
             return new_potential
         
+        # This function is writter with the partial help from ChatGPT
         def get_marginals(potential, variable_index):
             new_potential = {}
             for key, value in potential.items(): 
@@ -405,8 +409,8 @@ class Inference:
             return new_potential
         
         def distribute_messages(node, parent, parent_potential=None):
+
             visited.add(node)  
-            
             if parent != None: 
                 parent_potential[node] = multiply_potentials(parent_potential[node], parent_potential[parent])
             for var in self.clique_list[node]:  
@@ -458,8 +462,8 @@ class Inference:
         """ 
         final_beliefs = {}
         k = self.k_value
-        def multiply_potentials(potential1, potential2):
-            """Multiply two potential tables, keeping top-k assignments."""
+
+        def multiply_potentials(potential1, potential2): 
             result = []
             for (key1, value1) in potential1:
                 for (key2, value2) in potential2:
@@ -468,45 +472,48 @@ class Inference:
 
                     if any(i in set1 and key1[i] != key2[i] for i in set2):
                         continue
-
-                    merged_key = ''.join([key1[i] if key1[i] != '#' else key2[i] for i in range(len(key1))])
+                    equals = True
+                    for i in set2:
+                        if i in set1 and key1[i] != key2[i]:
+                            equals = False
+                            break
+                    if not equals:
+                        continue
+                    merged_key = ''.join([key1[i] if key1[i] != '#' else key2[i] for i in range(len(key1))]) 
                     result.append((merged_key, value1 * value2))
+            ans = heapq.nlargest(k, result, key=lambda x: x[1])
+            return ans
 
-            return heapq.nlargest(k, result, key=lambda x: x[1])
-
-        def sum_out_variable(potential, variable_index):
-            """Sum out a variable while keeping track of top-k assignments."""
-            grouped_potentials = {}
+        def sum_out_variable(potential, variable_index): 
+            current_potentials = {}
 
             for assignment, prob in potential:
-                new_key = assignment[:variable_index] + '#' + assignment[variable_index + 1:]
-                if new_key not in grouped_potentials:
-                    grouped_potentials[new_key] = []
-                heapq.heappush(grouped_potentials[new_key], (-prob, assignment))  # Use min heap for top-k tracking
+                index = assignment[:variable_index] + '#' + assignment[variable_index + 1:]
+                if index not in current_potentials:
+                    current_potentials[index] = []
 
-            # Retain only top-k assignments per group
+                heapq.heappush(current_potentials[index], (-prob, assignment))
+
             new_potential = []
-            for new_key, heap in grouped_potentials.items():
-                top_k_values = heapq.nsmallest(k, heap)  # Extract top-k largest
+            for index, heap in current_potentials.items():
+                top_k_values = heapq.nsmallest(k, heap)
+
                 new_potential.extend([(assignment, -prob) for prob, assignment in top_k_values])
 
             return new_potential
 
-        # Step 1: Select a root clique
-        root = 0  # Choose a root clique (can be changed as needed)
+        root = 0
 
-        # Step 2: Perform upward (collect) message passing
         visited = set()
         messages = {}
 
-        def collect_messages(node, parent):
-            """Recursively collect messages from child to parent, keeping top-k assignments."""
+        def traverse(node, parent):  
             visited.add(node)
             incoming_potential = [(key, prob) for key, prob in self.junction_tree_potentials[node].items()]
 
             for neighbor in self.junction_tree[node]:
                 if neighbor != parent and neighbor not in visited:
-                    collect_messages(neighbor, node)
+                    traverse(neighbor, node)
                     incoming_potential = multiply_potentials(incoming_potential, messages[neighbor])
 
             final_beliefs[node] = incoming_potential
@@ -519,14 +526,17 @@ class Inference:
 
             messages[node] = incoming_potential
 
-        collect_messages(root, None)
 
-        # Step 3: Extract top-k assignments from root message
+        traverse(root, None)
+
         top_k_assignments = heapq.nlargest(k, messages[root], key=lambda x: x[1]) 
-        # Step 4: Format output
-        formatted_assignments = [(assignment.replace('#', '0'), prob/self.z_value) for assignment, prob in top_k_assignments]
+
+        formatted_assignments = []
+        for assignment, prob in top_k_assignments:
+            formatted_assignments.append((assignment.replace('#', '0'), prob/self.z_value))
         
         final_top_k_processed = [{"assignment":[int(digit) for digit in x[0]], "probability":x[1]} for x in  formatted_assignments]
+        
         return final_top_k_processed
 
 
@@ -567,6 +577,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('TestCases.json')
+    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
