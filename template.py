@@ -291,6 +291,8 @@ class Inference:
         Refer to the problem statement for details on computing the partition function.
         """
         final_beliefs = {}
+        
+        # This function is writter with the partial help from ChatGPT
         def multiply_potentials(potential1, potential2): 
             result = {}
             
@@ -309,7 +311,8 @@ class Inference:
                     if set2.difference(set1) == set():
                         result[key1] = value1 * value2 
             return result
-
+        
+        # This function is writter with the partial help from ChatGPT
         def sum_out_variable(potential, variable_index): 
             new_potential = {}
             for key in potential:
@@ -392,6 +395,7 @@ class Inference:
                     if set2.issubset(set1):
                         result[key1] = result.get(key1, 0) + value1 * (1/value2)
             return result
+        
         # This function is writter with the partial help from ChatGPT
         def sum_out_variable(potential, variable_index): 
             new_potential = {}
@@ -462,7 +466,8 @@ class Inference:
         """ 
         final_beliefs = {}
         k = self.k_value
-
+        
+        # This function is writter with the partial help from ChatGPT
         def multiply_potentials(potential1, potential2): 
             result = []
             for (key1, value1) in potential1:
@@ -484,6 +489,9 @@ class Inference:
             ans = heapq.nlargest(k, result, key=lambda x: x[1])
             return ans
 
+        
+        # This function is writter with the partial help from ChatGPT
+
         def sum_out_variable(potential, variable_index): 
             current_potentials = {}
 
@@ -497,7 +505,6 @@ class Inference:
             new_potential = []
             for index, heap in current_potentials.items():
                 top_k_values = heapq.nsmallest(k, heap)
-
                 new_potential.extend([(assignment, -prob) for prob, assignment in top_k_values])
 
             return new_potential
