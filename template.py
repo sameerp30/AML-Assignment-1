@@ -1,6 +1,5 @@
 import json
-
-
+import heapq
 
 ########################################################################
 
@@ -14,8 +13,9 @@ class Node:
     neighbours = []
     def __init__(self, index):
 
-        self.index = index  # Instance attribute 
+        self.index = index
 
+# The Code for DisjoinSet class is generated using Copilot
 class DisjointSet:
     def __init__(self, n):
         self.parent = [i for i in range(n)]
@@ -40,9 +40,6 @@ class DisjointSet:
         else:
             self.parent[y_root] = x_root
             self.rank[x_root] += 1
-
-    def is_same_set(self, x, y):
-        return self.find(x) == self.find(y)
 
 class Inference:
     def __init__(self, data):
@@ -70,22 +67,18 @@ class Inference:
         self.potentials = {}
         self.k_value = self.input["k value (in top k)"]
 
-        # Iterate thorugh the cliques and potentials and create the graph
         for candp in self.input["Cliques and Potentials"]:
             for i in range(candp["clique_size"]):
-                for j in range(i+1, candp["clique_size"]):
-                    # Add unique edges to the graph
+                for j in range(i+1, candp["clique_size"]): 
                     if candp["cliques"][j] not in self.graph[candp["cliques"][i]]:
                         self.graph[candp["cliques"][i]].append(candp["cliques"][j])
                     
                     if candp["cliques"][i] not in self.graph[candp["cliques"][j]]:
                         self.graph[candp["cliques"][j]].append(candp["cliques"][i])
-
-            # Add the potentials to the potentials dictionary
+            
             if self.potentials.get(tuple(candp["cliques"])) is None:
                 self.potentials[tuple(candp["cliques"])] = {}
             if(len(candp["cliques"]) == 1):
-                 
                  index_list = ['#']*self.VariablesCount 
                  index_list[candp["cliques"][0]] = '1'
                  index = ''.join(index_list)
@@ -114,22 +107,17 @@ class Inference:
                             self.potentials[tuple(candp["cliques"])][index] *= candp["potentials"][count]
                         else :
                             self.potentials[tuple(candp["cliques"])][index] = candp["potentials"][count]
-                        count += 1
-        print('graph', self.graph) 
-        print("_"*100)
-        print(f'potentials {self.potentials}')
+                        count += 1 
         pass
 
-    def isSimplicial(self, node, graph):
-        # Check if the node is simplicial or not
+    def isSimplicial(self, node, graph): 
         for i in range(len(graph[node])):
             for j in range(i+1, len(graph[node])):
                 if graph[node][j] not in graph[graph[node][i]] and graph[node][i] not in graph[graph[node][j]]:
                     return False
         return True
 
-    def make_node_simplicial(self, graph, node):
-        # Creat a clique between all the neighbours of the node
+    def make_node_simplicial(self, graph, node): 
         for i in range(len(graph[node])):
             for j in range(i+1, len(graph[node])):
                 if graph[node][j] not in graph[graph[node][i]]:
@@ -140,12 +128,6 @@ class Inference:
                     self.graph[graph[node][j]].append(self.graph[node][i])
         pass
     
-    def forms_clique(self, ordering):
-        for i in range(len(ordering)):
-            for j in range(i+1, len(ordering)):
-                if ordering[j] not in self.graph[ordering[i]] and ordering[i] not in self.graph[ordering[j]]:
-                    return False
-        return True
 
     def triangulate_and_get_cliques(self):  
         """
@@ -159,72 +141,76 @@ class Inference:
 
         Refer to the problem statement for details on triangulation and clique extraction.
         """
-        simplicial_vertices = []
-        # First find the initial simplicial vertices
+        simplicial_vertices = [] 
         for i in range(self.VariablesCount):
             if self.isSimplicial(i, self.graph):
-                simplicial_vertices.append(i) 
-        # Copy the graph and simplicial vertices 
+                simplicial_vertices.append(i)  
+ 
         copy_graph = [self.graph[i].copy() for i in range(self.VariablesCount)]
         simplicial_vertices_set = set(simplicial_vertices)
-        ordering = [] # Variable elimination ordering
-        count = 0
-        while(len(simplicial_vertices) != 0):
-            if(count == 10):
-                break
-            count += 1 
-            top = simplicial_vertices.pop(0)
-            ordering.append(top) 
-            # Remove the top from the graph and all the edges associated with it
+
+        if(len(simplicial_vertices) == 0) and (len(simplicial_vertices_set) != self.VariablesCount): 
+                min_degree = 100000000
+                min_degree_vertex = -1
+                for i in range(self.VariablesCount):
+                    if len(copy_graph[i]) < min_degree:
+                        min_degree = len(copy_graph[i])
+                        min_degree_vertex = i  
+                self.make_node_simplicial(copy_graph, min_degree_vertex)
+ 
+                simplicial_vertices.append(min_degree_vertex)
+                simplicial_vertices_set.add(min_degree_vertex)
+
+        ordering = []  
+        while(len(simplicial_vertices) != 0):  
+            top = simplicial_vertices.pop(0) 
+            ordering.append(top)
             for i in range(self.VariablesCount):
                 if top in copy_graph[i]:
                     copy_graph[i].remove(top)
 
             copy_graph[top].clear
 
-            new_simplicial_vertices = []
             for i in range(self.VariablesCount):
-                if i not in simplicial_vertices_set and self.isSimplicial(i, copy_graph):
-                    new_simplicial_vertices.append(i)
-                    simplicial_vertices_set.add(i) 
-
-            # If no new simplicial vertices are found, then we need to add a new simplicial vertex
-            if(len(new_simplicial_vertices) == 0) and (len(simplicial_vertices_set) != self.VariablesCount):
-                # Goind with first heuristic: Choose vertex with smallest degree and connect all its neighbours
+                if i not in simplicial_vertices_set and self.isSimplicial(i, copy_graph): 
+                    simplicial_vertices_set.add(i)
+                    simplicial_vertices.append(i)  
+            
+            new_simplicial_vertices = []
+            if (len(simplicial_vertices) == 0) and (len(simplicial_vertices_set) != self.VariablesCount): 
                 min_degree = 100000000
                 min_degree_vertex = -1
                 for i in range(self.VariablesCount):
-                    if len(copy_graph[i]) < min_degree:
+                    if i not in simplicial_vertices_set and len(copy_graph[i]) < min_degree:
                         min_degree = len(copy_graph[i])
-                        min_degree_vertex = i 
-                # Connect all the neighbours of the min_degree_vertex
-                self.make_node_simplicial(copy_graph, min_degree_vertex)
-
-                # Add the min_degree_vertex to the simplicial vertices
-                new_simplicial_vertices.append(min_degree_vertex)
-                simplicial_vertices_set.add(min_degree_vertex)
-            # print(f'new_simplicial_vertices {new_simplicial_vertices} {simplicial_vertices_set} \n copy_graph {copy_graph}')
+                        min_degree_vertex = i  
+                if min_degree_vertex != -1:
+                    self.make_node_simplicial(copy_graph, min_degree_vertex) 
+                    new_simplicial_vertices.append(min_degree_vertex)
+                    simplicial_vertices_set.add(min_degree_vertex) 
             simplicial_vertices.extend(new_simplicial_vertices)
 
         self.clique_list = []
-        visited = set()
-        print("#"*100)
-        print(f'ordering {ordering}')
+        visited = set() 
         for i in range(len(ordering)):
             new_clique = []
             new_clique.append(ordering[i])
-            new_clique += [j for j in self.graph[ordering[i]] if j not in visited]
+            new_clique += [j for j in self.graph[ordering[i]] if j not in visited] 
             self.clique_list.append(new_clique)
             visited.add(ordering[i])
-            
-            if(self.forms_clique(ordering[i:])):
-                break
+        new_clique_list = []
         for i in range(len(self.clique_list)):
-            self.clique_list[i] = sorted(self.clique_list[i])
-        
-        print(f'cliques {self.clique_list}') 
+            ispresent = False
+            for j in range(len(new_clique_list)): 
+                if set(new_clique_list[j]).issuperset(set(self.clique_list[i])):
+                    ispresent = True
+                    break
+            if not ispresent:
+                new_clique_list.append(self.clique_list[i])
 
-
+        self.clique_list = new_clique_list
+        for i in range(len(self.clique_list)):
+            self.clique_list[i] = sorted(self.clique_list[i]) 
         pass
     
     def get_junction_tree(self):
@@ -247,18 +233,14 @@ class Inference:
                 intersection_set = set(self.clique_list[i]).intersection(set(self.clique_list[j])) 
                 edges_list.append([i, j, len(intersection_set)])
 
-        edges_list = sorted(edges_list, key = lambda x: x[2], reverse = True)
-        print(f'edges_list {edges_list}')
+        edges_list = sorted(edges_list, key = lambda x: x[2], reverse = True) 
         ds = DisjointSet(len(self.clique_list))
         for i in range(len(edges_list)):
             if ds.find(edges_list[i][0]) != ds.find(edges_list[i][1]):
                 self.junction_tree[edges_list[i][0]].append(edges_list[i][1])
                 self.junction_tree[edges_list[i][1]].append(edges_list[i][0])
                 ds.union(edges_list[i][0], edges_list[i][1])
-
-        
-        print("#"*100) 
-        print(f'junction tree {self.junction_tree}')
+ 
         pass
 
     def assign_potentials_to_cliques(self):
@@ -294,11 +276,6 @@ class Inference:
                             else:
                                 self.junction_tree_potentials[idx][index] = self.potentials[cliq][index2]
 
-        # print("#"*100)
-        # for p in self.junction_tree_potentials:
-        #     print(p)
-
-        # print("\n\n\n")
         pass
     
 
@@ -318,12 +295,10 @@ class Inference:
             result = {}
             
             for key1, value1 in potential1.items():
-                for key2, value2 in potential2.items():
-                    # merged_key = ''.join([k1 if k1 != '#' else k2 for k1, k2 in zip(key1, key2)])
-                    # result[merged_key] = result.get(merged_key, 0) + value1 * value2
+                for key2, value2 in potential2.items(): 
                     set1 = set([i for i in range(len(key1)) if key1[i] != '#'])
-                    set2 = set([i for i in range(len(key2)) if key2[i] != '#'])
-                    # print(f'set1 {set1} set2 {set2}')
+                    set2 = set([i for i in range(len(key2)) if key2[i] != '#']) 
+
                     equals = True
                     for i in set2:
                         if i in set1 and key1[i] != key2[i]:
@@ -331,10 +306,8 @@ class Inference:
                             break
                     if not equals:
                         continue
-                    if set2.difference(set1) == set(): # If set2 is a subset of set1
-                        result[key1] = value1 * value2
-            #             print(f'key1 {key1} key2 {key2} value1 {value1} value2 {value2} {result[key1]}')
-            # print(f'potential1 {potential1} \npotential2 {potential2} \nresult {result}')
+                    if set2.difference(set1) == set():
+                        result[key1] = value1 * value2 
             return result
 
         def sum_out_variable(potential, variable_index):
@@ -344,53 +317,36 @@ class Inference:
                 new_key = key[:variable_index] + '#' + key[variable_index + 1:]
                 new_potential[new_key] = new_potential.get(new_key, 0) + potential[key]
             return new_potential
-
-        # Step 1: Select a root clique
-        root = 2  # Choosing the first clique as the root
-
-        # Step 2: Perform upward (collect) message passing
+        
+        root = 0   
+  
         visited = set()
         messages = {}
 
-        def collect_messages(node, parent):
-            """Recursively collect messages from child to parent."""
+        def collect_messages(node, parent): 
             visited.add(node)
             incoming_potential = self.junction_tree_potentials[node]
             for neighbor in self.junction_tree[node]:
                 if neighbor != parent and neighbor not in visited:
-                    collect_messages(neighbor, node) 
-                    # print(f'node {node} neighbor {neighbor}')
-                    incoming_potential = multiply_potentials(incoming_potential, messages[neighbor])
-                    # print('_'*100)
-                    # print(f'node {node} parent {parent}')
-                    # print(f'incoming_potential {incoming_potential} \n messages[neighbor] {messages[neighbor]}')
-            # Sum out variables not in the separator set (between parent and child)
+                    collect_messages(neighbor, node)  
+                    incoming_potential = multiply_potentials(incoming_potential, messages[neighbor]) 
+
             final_beliefs[node] = incoming_potential
             if parent is not None:
-                separator = set(self.clique_list[node]) & set(self.clique_list[parent])
-                # print(f'separator {separator}')
+                separator = set(self.clique_list[node]) & set(self.clique_list[parent]) 
                 for var in self.clique_list[node]:
                     if var not in separator:
                         incoming_potential = sum_out_variable(incoming_potential, var)
 
-            messages[node] = incoming_potential
-            # print(f'node {node} incoming_potential {incoming_potential}')
+            messages[node] = incoming_potential 
 
         collect_messages(root, None)
-
-        # Step 3: Compute Z value 
+ 
         self.final_beliefs = final_beliefs
-        self.messages = messages
-        for msg in messages:
-            print(f'{msg} {messages[msg]}')
+        self.messages = messages 
         z_value = sum(messages[root].values())
-        self.z_value = z_value
-        print(z_value)
-        print('-'*100)
-        # print(f'Final Beliefs')
-        # for fb in final_beliefs:
-        #     print(f'{fb} {final_beliefs[fb]}')
-        pass
+        self.z_value = z_value 
+        return z_value
 
     def compute_marginals(self):
         """
@@ -406,10 +362,8 @@ class Inference:
         visited = set()
         visited_variable = set()
         marginals = {}
-        root = 2
-        def multiply_potentials(potential1, potential2): 
-            """Multiply two potential tables."""
-            
+        root = 0
+        def multiply_potentials(potential1, potential2):   
             result = {}
             for key1, value1 in potential1.items():
                 for key2, value2 in potential2.items():
@@ -417,11 +371,12 @@ class Inference:
                     set2 = {i for i in range(len(key2)) if key2[i] != '#'}
                     
                     if any(i in set1 and key1[i] != key2[i] for i in set2):
-                        continue  # Skip mismatched keys
+                        continue 
                     
-                    if set2.issubset(set1):  # If set2 is a subset of set1
+                    if set2.issubset(set1):
                         result[key1] = result.get(key1, 0) + value1 * value2
             return result
+        
         def divide_potentials(potential1, potential2): 
             result = {}
             for key1, value1 in potential1.items():
@@ -430,13 +385,12 @@ class Inference:
                     set2 = {i for i in range(len(key2)) if key2[i] != '#'}
                     
                     if any(i in set1 and key1[i] != key2[i] for i in set2):
-                        continue  # Skip mismatched keys
+                        continue   
                     
-                    if set2.issubset(set1):  # If set2 is a subset of set1
+                    if set2.issubset(set1):
                         result[key1] = result.get(key1, 0) + value1 * (1/value2)
             return result
-        def sum_out_variable(potential, variable_index):
-            """Sum out a variable from a potential table.""" 
+        def sum_out_variable(potential, variable_index): 
             new_potential = {}
             for key, value in potential.items():
                 new_key = key[:variable_index] + '#' + key[variable_index + 1:]
@@ -444,72 +398,54 @@ class Inference:
             return new_potential
         
         def get_marginals(potential, variable_index):
-
             new_potential = {}
-            for key, value in potential.items():
-                new_key = key[:variable_index] + '#' + key[variable_index + 1:]
+            for key, value in potential.items(): 
                 curr_key = 1 if key[variable_index] == '1' else 0
                 new_potential[curr_key] = new_potential.get(curr_key, 0) + value
             return new_potential
+        
         def distribute_messages(node, parent, parent_potential=None):
-            """Recursively distribute messages from parent to child.""" 
-            # print(f"node {node} parent potentials")
-            # print(f'clique {self.clique_list[node]}')
-            # for p in parent_potential:
-            #     print(p, parent_potential[p])
-            visited.add(node)
-            if parent != None:
-                parent_potential[node] = multiply_potentials(parent_potential[node], parent_potential[parent])
-            # print('\n\n\n')
-            # print("potentials after multiplication")
-            # for p in parent_potential:
-            #     print(p, parent_potential[p])
+            visited.add(node)  
             
-
-            for var in self.clique_list[node]: 
+            if parent != None: 
+                parent_potential[node] = multiply_potentials(parent_potential[node], parent_potential[parent])
+            for var in self.clique_list[node]:  
                 if var in visited_variable:
                     continue
                 visited_variable.add(var)
-                current_marginals = get_marginals(parent_potential[node], var)
+                current_marginals = get_marginals(parent_potential[node], var) 
                 marginals[var] = current_marginals
-                # print('-----------------------------------')
-                # print(f'{current_marginals}')
-                # print('-----------------------------------')
-            
-            # Pass messages to children
+                 
             for neighbor in self.junction_tree[node]:
                 if neighbor not in visited:
-                    separator = set(self.clique_list[node]) & set(self.clique_list[neighbor])
-                    current_marginals = {}
+                    separator = set(self.clique_list[node]) & set(self.clique_list[neighbor]) 
+                    current_marginals = parent_potential[neighbor]
                     for var in self.clique_list[neighbor]:
                         if var not in separator:
-                            # print(parent_potential[node], separator)
-                            current_marginals = sum_out_variable(parent_potential[neighbor], var)
-                    outgoing_messages = dict(parent_potential)
-                    # print(f'current marginals {current_marginals}')
-                    outgoing_messages[node] = divide_potentials(outgoing_messages[node], current_marginals)
+                            current_marginals = sum_out_variable(current_marginals, var)
                     
-                    current_marginals = {}
+                    outgoing_messages = dict(parent_potential) 
+                    outgoing_messages[node] = divide_potentials(outgoing_messages[node], current_marginals) 
                     for var in self.clique_list[node]:
                         if var not in separator:
-                            outgoing_messages[node] = sum_out_variable(outgoing_messages[node], var)
-                    # print(f'outgoing message {outgoing_messages}')
+                            outgoing_messages[node] = sum_out_variable(outgoing_messages[node], var) 
+                    
                     distribute_messages(neighbor, node, outgoing_messages)
+        
 
-
-
-        # Run downward pass
         distribute_messages(root, None, self.final_beliefs)
-        for mrgs in marginals:
-            print(f"variable_index {mrgs}")
-            for val in marginals[mrgs]:
-                print(f'{val} {marginals[mrgs][val]/self.z_value}')
-        print("_"*100) 
+        marginals_list = [[] for i in range(self.VariablesCount)]
+        for mrgs in marginals:  
+            if 0 in marginals[mrgs]:
+                marginals_list[mrgs].append(marginals[mrgs][0]/self.z_value)
+            if 1 in marginals[mrgs]:
+                marginals_list[mrgs].append(marginals[mrgs][1]/self.z_value)
 
-        print(marginals)
+        return marginals_list
         
 
     def compute_top_k(self):
+    
         """
         Compute the top-k most probable assignments in the graphical model.
         
@@ -519,8 +455,80 @@ class Inference:
         - Return the assignments along with their probabilities in the specified format.
         
         Refer to the sample test case for the expected format of the top-k assignments.
-        """
-        pass
+        """ 
+        final_beliefs = {}
+        k = self.k_value
+        def multiply_potentials(potential1, potential2):
+            """Multiply two potential tables, keeping top-k assignments."""
+            result = []
+            for (key1, value1) in potential1:
+                for (key2, value2) in potential2:
+                    set1 = {i for i in range(len(key1)) if key1[i] != '#'}
+                    set2 = {i for i in range(len(key2)) if key2[i] != '#'}
+
+                    if any(i in set1 and key1[i] != key2[i] for i in set2):
+                        continue
+
+                    merged_key = ''.join([key1[i] if key1[i] != '#' else key2[i] for i in range(len(key1))])
+                    result.append((merged_key, value1 * value2))
+
+            return heapq.nlargest(k, result, key=lambda x: x[1])
+
+        def sum_out_variable(potential, variable_index):
+            """Sum out a variable while keeping track of top-k assignments."""
+            grouped_potentials = {}
+
+            for assignment, prob in potential:
+                new_key = assignment[:variable_index] + '#' + assignment[variable_index + 1:]
+                if new_key not in grouped_potentials:
+                    grouped_potentials[new_key] = []
+                heapq.heappush(grouped_potentials[new_key], (-prob, assignment))  # Use min heap for top-k tracking
+
+            # Retain only top-k assignments per group
+            new_potential = []
+            for new_key, heap in grouped_potentials.items():
+                top_k_values = heapq.nsmallest(k, heap)  # Extract top-k largest
+                new_potential.extend([(assignment, -prob) for prob, assignment in top_k_values])
+
+            return new_potential
+
+        # Step 1: Select a root clique
+        root = 0  # Choose a root clique (can be changed as needed)
+
+        # Step 2: Perform upward (collect) message passing
+        visited = set()
+        messages = {}
+
+        def collect_messages(node, parent):
+            """Recursively collect messages from child to parent, keeping top-k assignments."""
+            visited.add(node)
+            incoming_potential = [(key, prob) for key, prob in self.junction_tree_potentials[node].items()]
+
+            for neighbor in self.junction_tree[node]:
+                if neighbor != parent and neighbor not in visited:
+                    collect_messages(neighbor, node)
+                    incoming_potential = multiply_potentials(incoming_potential, messages[neighbor])
+
+            final_beliefs[node] = incoming_potential
+
+            if parent is not None:
+                separator = set(self.clique_list[node]) & set(self.clique_list[parent])
+                for var in self.clique_list[node]:
+                    if var not in separator:
+                        incoming_potential = sum_out_variable(incoming_potential, var)
+
+            messages[node] = incoming_potential
+
+        collect_messages(root, None)
+
+        # Step 3: Extract top-k assignments from root message
+        top_k_assignments = heapq.nlargest(k, messages[root], key=lambda x: x[1]) 
+        # Step 4: Format output
+        formatted_assignments = [(assignment.replace('#', '0'), prob/self.z_value) for assignment, prob in top_k_assignments]
+        
+        final_top_k_processed = [{"assignment":[int(digit) for digit in x[0]], "probability":x[1]} for x in  formatted_assignments]
+        return final_top_k_processed
+
 
 
 
@@ -559,6 +567,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('testCase1.json')
+    evaluator = Get_Input_and_Check_Output('TestCases.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
